@@ -28,6 +28,9 @@ router.post("/work",Controlar.AddWork)
 router.put("/work/:_id",Controlar.PutWork)
 router.delete("/work/:_id",Controlar.DeleteWork )
 
+router.post("/login",Controlar.Login)
+router.post("/password",Controlar.setPassword)
+
 
 
 

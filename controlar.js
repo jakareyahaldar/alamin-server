@@ -11,6 +11,27 @@ const Controlar = {}
 
 
 
+//_______________________________________________________
+// Add Initial data on database 
+const carearpath_data = require("./data/carear_path.js")
+const certificate_data = require("./data/certificate.js")
+const experties_data = require("./data/experties.js")
+const work_demon_data = require("./data/work_demon.js")
+async function pushData(data, coll) {
+    try {
+        const newData = new coll(data)
+        const save = await newData.save()
+        console.log("saved.")
+    } catch (err) {
+        console.log(err.message)
+    }
+}
+// carearpath_data.map( e => pushData(e,CarearColl) )
+// certificate_data.map( e => pushData(e,CertificateColl) )
+// experties_data.map( e => pushData(e,ExpertiesColl) )
+// work_demon_data.map( e => pushData(e,workDemonColl) )
+//_______________________________________________________
+
 
 
 
@@ -297,7 +318,7 @@ Controlar.AddWork = async (req, resp) => {
 
 
 
-Controlar.PutWork =  async (req, resp) => {
+Controlar.PutWork = async (req, resp) => {
     try {
         const data = req.body;
         const { _id } = req.params
@@ -346,34 +367,46 @@ Controlar.DeleteWork = async (req, resp) => {
 //______________________________________________________________________________________
 // PASSWORD MANAGER 
 
-Controlar.setPassword = async (req,resp)=>{
-  try{
-    const {password} = req.body
-    if(!password) throw Error("Please Input Password!")
-    const hashPass = createJWT(password)
-    if(!hashPass) throw Error("Server Error!")
-    const [user] = await userCon.find()
-    user.password = hashPass
-    await user.save()
-    resp.status(200).json({token: hashPass})
-  }catch(err){
-    resp.status(500).json({error: err.message})
-  }
+Controlar.setPassword = async (req, resp) => {
+    try {
+        const { password } = req.body
+        if (!password) throw Error("Please Input Password!")
+        const hashPass = createJWT(password)
+        if (hashPass.error) throw Error("Server Error!")
+        const [user] = await userCon.find()
+        user.password = hashPass.token
+        await user.save()
+        resp.status(200).json({ token: hashPass.token })
+    } catch (err) {
+        resp.status(500).json({ error: err.message })
+    }
 }
 
-Controlar.Login = async (req,resp)=>{
-  try{
-    const { enteredPassword } = req.body
-    if(!enteredPassword) throw Error("Please Enter a password!")
-    const [user] = await userCon.find()
-    const decoded = decodeJWT(user.password)
-    if(decoded.error) throw Error("Server error")
-    if(decoded.data !== enteredPassword.trim()) throw Error("invalid password!")
-    const tocken = createJWT(enteredPassword.trim())
-    resp.status(200).json({tocken})
-  }catch(err){
-    resp.status(500).json({error: err.message})
-  }
+Controlar.Login = async (req, resp) => {
+    try {
+        const { password } = req.body
+        if (!password) throw Error("Please Enter a password!")
+        const [user] = await userCon.find()
+        if (!user) {
+            const hashPass = createJWT(password)
+            const newUser = new userCon({
+                name: "Alamin Howlader",
+                description: "my desc",
+                image: "",
+                password: hashPass.token
+            })
+            await newUser.save()
+            resp.status(200).json({ token: hashPass.token })
+            return
+        }
+        const decoded = decodeJWT(user.password)
+        if (decoded.error) throw Error("Server error")
+        if (decoded.data !== password.trim()) throw Error("invalid password!")
+        const token = createJWT(password.trim())
+        resp.status(200).json({ token: token.token })
+    } catch (err) {
+        resp.status(500).json({ error: err.message })
+    }
 }
 
 
