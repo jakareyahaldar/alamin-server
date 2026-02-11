@@ -4,7 +4,7 @@ const checkObjEmpty = require("./utilities/objectEmptyItemCheck.js")
 const ExpertiesColl = require("./mongoose/model/expertiesModel.js")
 const CertificateColl = require("./mongoose/model/certificateModel.js")
 const workDemonColl = require("./mongoose/model/workDemonModel.js")
-
+const { createJWT, decodeJWT } = require("./utilities/JWT.js")
 const Controlar = {}
 
 
@@ -346,7 +346,35 @@ Controlar.DeleteWork = async (req, resp) => {
 //______________________________________________________________________________________
 // PASSWORD MANAGER 
 
-Controlar.setPassword = ()=>{}
+Controlar.setPassword = async (req,resp)=>{
+  try{
+    const {password} = req.body
+    if(!password) throw Error("Please Input Password!")
+    const hashPass = createJWT(password)
+    if(!hashPass) throw Error("Server Error!")
+    const [user] = await userCon.find()
+    user.password = hashPass
+    await user.save()
+    resp.status(200).json({token: hashPass})
+  }catch(err){
+    resp.status(500).json({error: err.message})
+  }
+}
+
+Controlar.Login = async (req,resp)=>{
+  try{
+    const { enteredPassword } = req.body
+    if(!enteredPassword) throw Error("Please Enter a password!")
+    const [user] = await userCon.find()
+    const decoded = decodeJWT(user.password)
+    if(decoded.error) throw Error("Server error")
+    if(decoded.data !== enteredPassword.trim()) throw Error("invalid password!")
+    const tocken = createJWT(enteredPassword.trim())
+    resp.status(200).json({tocken})
+  }catch(err){
+    resp.status(500).json({error: err.message})
+  }
+}
 
 
 
